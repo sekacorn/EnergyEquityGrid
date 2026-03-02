@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: energyequitygrid-postgres
+    environment:
+      POSTGRES_DB: energyequitygrid
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - energyequitygrid-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: energyequitygrid-redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./database/redis/config.yaml:/usr/local/etc/redis/redis.conf
+    networks:
+      - energyequitygrid-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Energy Integrator Service
+  energy-integrator:
+    build: ./backend/energy-integrator
+    container_name: energyequitygrid-integrator
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/energyequitygrid
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    networks:
+      - energyequitygrid-network
+    restart: unless-stopped
+
+  # User Session Service
+  user-session:
+    build: ./backend/user-session
+    container_name: energyequitygrid-session
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/energyequitygrid
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    networks:
+      - energyequitygrid-network
+    restart: unless-stopped
+
+  # AI Prediction Service
+  ai-service:
+    build: ./ai-model
+    container_name: energyequitygrid-ai
+    ports:
+      - "8083:8083"
+    networks:
+      - energyequitygrid-network
+    restart: unless-stopped
+
+  # LLM Service
+  llm-service:
+    build:
+      context: ./ai-model
+      dockerfile: Dockerfile.llm
+    container_name: energyequitygrid-llm
+    ports:
+      - "8084:8084"
+    networks:
+      - energyequitygrid-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    container_name: energyequitygrid-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - energy-integrator
+      - user-session
+      - ai-service
+      - llm-service
+    networks:
+      - energyequitygrid-network
+    restart: unless-stopped
+
+  # NGINX Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: energyequitygrid-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - energy-integrator
+      - user-session
+      - ai-service
+      - llm-service
+    networks:
+      - energyequitygrid-network
+    restart: unless-stopped
+
+networks:
+  energyequitygrid-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
