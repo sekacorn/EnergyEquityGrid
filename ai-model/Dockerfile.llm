@@ -7,9 +7,9 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
+# Install dependencies (full requirements for consistency)
 COPY requirements.txt .
-RUN pip install --no-cache-dir fastapi uvicorn pydantic
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy LLM service code
 COPY llm_service.py .

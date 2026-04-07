@@ -1,28 +1,33 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: energyequitygrid-postgres
     environment:
-      POSTGRES_DB: energyequitygrid
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-energyequitygrid}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # NIST SC-28: Encryption at rest — PostgreSQL data-at-rest encryption options:
+      # Option 1 (recommended for production): Use an encrypted Docker volume or
+      #   encrypted filesystem (LUKS, dm-crypt, BitLocker, AWS EBS encryption).
+      # Option 2: Use pgcrypto extension for column-level encryption of sensitive fields.
+      # Option 3: Use a managed database service with built-in encryption (AWS RDS, GCP Cloud SQL).
+      POSTGRES_INITDB_ARGS: "--data-checksums"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
       - energyequitygrid-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    mem_limit: 768m
+    cpus: 1.0
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: energyequitygrid-redis
@@ -39,8 +44,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    mem_limit: 256m
+    cpus: 0.5
 
-  # Energy Integrator Service
   energy-integrator:
     build: ./backend/energy-integrator
     container_name: energyequitygrid-integrator
@@ -50,14 +56,24 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/energyequitygrid
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-energyequitygrid}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET:-EnergyEquityGrid2025SecretKeyForJWTAuthenticationAndAuthorization}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      AI_PREDICTOR_URL: ${AI_PREDICTOR_URL:-http://ai-service:8083}
+      AI_LLM_URL: ${AI_LLM_URL:-http://llm-service:8084}
     networks:
       - energyequitygrid-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/api/data/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 768m
+    cpus: 1.0
 
-  # User Session Service
   user-session:
     build: ./backend/user-session
     container_name: energyequitygrid-session
@@ -69,26 +85,42 @@ services:
       redis:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/energyequitygrid
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-energyequitygrid}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-EnergyEquityGrid2025SecretKeyForJWTAuthenticationAndAuthorization}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     networks:
       - energyequitygrid-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 768m
+    cpus: 1.0
 
-  # AI Prediction Service
   ai-service:
     build: ./ai-model
     container_name: energyequitygrid-ai
     ports:
       - "8083:8083"
+    environment:
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     networks:
       - energyequitygrid-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 1g
+    cpus: 1.0
 
-  # LLM Service
   llm-service:
     build:
       context: ./ai-model
@@ -96,11 +128,19 @@ services:
     container_name: energyequitygrid-llm
     ports:
       - "8084:8084"
+    environment:
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     networks:
       - energyequitygrid-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 768m
+    cpus: 1.0
 
-  # Frontend
   frontend:
     build: ./frontend
     container_name: energyequitygrid-frontend
@@ -114,8 +154,14 @@ services:
     networks:
       - energyequitygrid-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 512m
+    cpus: 1.0
 
-  # NGINX Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: energyequitygrid-nginx
@@ -132,6 +178,13 @@ services:
     networks:
       - energyequitygrid-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 256m
+    cpus: 0.5
 
 networks:
   energyequitygrid-network:

@@ -1,87 +1,125 @@
 import { useState } from 'react'
-import axios from 'axios'
 import { toast } from 'react-toastify'
+import { API_BASE_INTEGRATOR } from '../config'
+import { apiRequest, getErrorMessage } from '../utils/apiClient'
 
-function DataUpload({ mbtiType, onUploadSuccess }) {
+const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024
+const ACCEPTED_EXTENSIONS = ['csv', 'json', 'geojson']
+const ACCEPTED_MIME_TYPES = [
+  'text/csv',
+  'application/csv',
+  'application/json',
+  'application/geo+json',
+  'application/octet-stream'
+]
+
+function DataUpload({ onUploadSuccess }) {
   const [file, setFile] = useState(null)
   const [dataType, setDataType] = useState('energy')
   const [uploading, setUploading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [statusMessage, setStatusMessage] = useState('')
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
-    if (selectedFile) {
-      const extension = selectedFile.name.split('.').pop().toLowerCase()
-      if (['csv', 'json', 'geojson'].includes(extension)) {
-        setFile(selectedFile)
-        toast.info(`File selected: ${selectedFile.name}`)
-      } else {
-        toast.error('Please upload CSV, JSON, or GeoJSON files only')
-      }
+    if (!selectedFile) {
+      return
     }
+
+    const extension = selectedFile.name.split('.').pop().toLowerCase()
+    if (!ACCEPTED_EXTENSIONS.includes(extension)) {
+      const message = 'Please upload a CSV, JSON, or GeoJSON file.'
+      setErrorMessage(message)
+      setStatusMessage('')
+      toast.error(message)
+      return
+    }
+
+    if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
+      const message = 'Files larger than 100 MB are not supported.'
+      setErrorMessage(message)
+      setStatusMessage('')
+      toast.error(message)
+      return
+    }
+
+    if (selectedFile.type && !ACCEPTED_MIME_TYPES.includes(selectedFile.type)) {
+      const message = 'The selected file type is not supported.'
+      setErrorMessage(message)
+      setStatusMessage('')
+      toast.error(message)
+      return
+    }
+
+    setFile(selectedFile)
+    setErrorMessage('')
+    setStatusMessage(`Selected file: ${selectedFile.name}`)
+    toast.info(`File selected: ${selectedFile.name}`)
   }
 
   const handleUpload = async () => {
     if (!file) {
-      toast.error('Please select a file first')
+      const message = 'Please select a file first.'
+      setErrorMessage(message)
+      setStatusMessage('')
+      toast.error(message)
       return
     }
 
     setUploading(true)
+    setErrorMessage('')
+    setStatusMessage('Uploading file...')
 
     const formData = new FormData()
     formData.append('file', file)
 
     try {
-      const endpoint = `/api/data/upload/${dataType}`
-      const response = await axios.post(endpoint, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      const response = await apiRequest(`${API_BASE_INTEGRATOR}/api/data/upload/${dataType}`, {
+        method: 'POST',
+        body: formData
       })
 
-      if (response.data.success) {
-        toast.success(`Successfully uploaded ${response.data.recordsProcessed} records!`)
+      if (response.success) {
+        setStatusMessage(`Successfully uploaded ${response.recordsProcessed} records.`)
+        toast.success(`Successfully uploaded ${response.recordsProcessed} records.`)
         setFile(null)
         if (onUploadSuccess) {
-          onUploadSuccess(response.data)
+          onUploadSuccess(response)
         }
-      } else {
-        toast.error(response.data.message || 'Upload failed')
+        return
       }
+
+      const message = response.message || 'Upload failed.'
+      setErrorMessage(message)
+      setStatusMessage('')
+      toast.error(message)
     } catch (error) {
-      console.error('Upload error:', error)
-      toast.error(error.response?.data?.message || 'Error uploading file')
+      const message = getErrorMessage(error, 'Error uploading file.')
+      setErrorMessage(message)
+      setStatusMessage('')
+      toast.error(message)
     } finally {
       setUploading(false)
     }
   }
 
-  const getMbtiGuidance = () => {
-    const guidance = {
-      ENTJ: 'Upload your data efficiently to start strategic analysis',
-      INFP: 'Share your community energy data to make a positive impact',
-      INFJ: 'Contribute data to help build a harmonious energy future',
-      ESTP: 'Quick upload - let\'s get this data in and start solving problems!',
-      INTJ: 'Systematic data integration for comprehensive analysis',
-      DEFAULT: 'Upload energy, community, or infrastructure data'
-    }
-    return guidance[mbtiType] || guidance.DEFAULT
-  }
-
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-xl shadow p-6">
       <h2 className="text-2xl font-bold mb-4">Data Upload</h2>
-      <p className="text-gray-600 mb-6">{getMbtiGuidance()}</p>
+      <p className="text-slate-600 mb-6">
+        Upload your community energy data to begin analysis.
+      </p>
 
-      {/* Data Type Selection */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="upload-data-type" className="block text-sm font-medium text-slate-700 mb-2">
           Data Type
         </label>
         <select
+          id="upload-data-type"
           value={dataType}
           onChange={(e) => setDataType(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-describedby="upload-status"
+          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-700"
         >
           <option value="energy">Energy Data (IRENA, NREL)</option>
           <option value="community">Community Data (OpenStreetMap)</option>
@@ -89,41 +127,50 @@ function DataUpload({ mbtiType, onUploadSuccess }) {
         </select>
       </div>
 
-      {/* File Upload */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="upload-file" className="block text-sm font-medium text-slate-700 mb-2">
           Select File (CSV, JSON, or GeoJSON)
         </label>
         <input
+          id="upload-file"
           type="file"
           accept=".csv,.json,.geojson"
           onChange={handleFileChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-invalid={Boolean(errorMessage)}
+          aria-describedby={errorMessage ? 'upload-error' : 'upload-status'}
+          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-700"
         />
         {file && (
-          <p className="mt-2 text-sm text-green-600">
+          <p className="mt-2 text-sm text-emerald-700">
             Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
           </p>
         )}
       </div>
 
-      {/* Upload Button */}
+      <div id="upload-status" aria-live="polite" className="mb-4 text-sm text-slate-600">
+        {statusMessage}
+      </div>
+      {errorMessage && (
+        <div id="upload-error" role="alert" className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
+
       <button
         onClick={handleUpload}
         disabled={!file || uploading}
         className={`w-full py-3 px-4 rounded-md font-semibold text-white ${
           !file || uploading
-            ? 'bg-gray-400 cursor-not-allowed'
-            : `mbti-${mbtiType.toLowerCase()} hover:opacity-90`
+            ? 'bg-slate-400 cursor-not-allowed'
+            : 'bg-emerald-700 hover:bg-emerald-800'
         }`}
       >
         {uploading ? 'Uploading...' : 'Upload Data'}
       </button>
 
-      {/* Format Examples */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-md">
+      <div className="mt-6 p-4 bg-slate-50 rounded-md">
         <h3 className="font-semibold mb-2">Expected Format Examples:</h3>
-        <div className="text-sm space-y-2">
+        <div className="text-sm space-y-2 text-slate-700">
           <div>
             <strong>Energy CSV:</strong> source, energyType, latitude, longitude, potential, currentCapacity
           </div>

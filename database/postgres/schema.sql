@@ -1,7 +1,9 @@
--- EnergyEquityGrid PostgreSQL Schema
--- Database for energy, community, and infrastructure data
+-- Legacy schema reference only (V1–V4 combined).
+-- The authoritative schema is managed by Flyway migrations in:
+-- backend/energy-integrator/src/main/resources/db/migration/
+-- backend/user-session/src/main/resources/db/migration/
+-- Do NOT use this file for Docker Compose initialization.
 
--- Users table
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -13,14 +15,23 @@ CREATE TABLE IF NOT EXISTS users (
     mfa_secret VARCHAR(255),
     sso_provider VARCHAR(50),
     sso_user_id VARCHAR(255),
-    mbti_type VARCHAR(10),
     organization VARCHAR(255),
     is_enterprise_user BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
+    last_login TIMESTAMP,
+    failed_login_attempts INTEGER DEFAULT 0,
+    lockout_until TIMESTAMP,
+    password_changed_at TIMESTAMP,
+    consent_data_processing BOOLEAN DEFAULT false,
+    consent_data_processing_at TIMESTAMP,
+    consent_marketing BOOLEAN DEFAULT false,
+    consent_marketing_at TIMESTAMP,
+    consent_analytics BOOLEAN DEFAULT false,
+    consent_analytics_at TIMESTAMP,
+    privacy_policy_accepted_at TIMESTAMP,
+    data_deletion_requested_at TIMESTAMP
 );
 
--- User roles
 CREATE TABLE IF NOT EXISTS user_roles (
     user_id BIGINT NOT NULL,
     role VARCHAR(50) NOT NULL,
@@ -28,7 +39,6 @@ CREATE TABLE IF NOT EXISTS user_roles (
     PRIMARY KEY (user_id, role)
 );
 
--- User sessions
 CREATE TABLE IF NOT EXISTS user_sessions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -42,7 +52,6 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Energy data
 CREATE TABLE IF NOT EXISTS energy_data (
     id BIGSERIAL PRIMARY KEY,
     source VARCHAR(100) NOT NULL,
@@ -56,7 +65,6 @@ CREATE TABLE IF NOT EXISTS energy_data (
     uploaded_by VARCHAR(100)
 );
 
--- Community data
 CREATE TABLE IF NOT EXISTS community_data (
     id BIGSERIAL PRIMARY KEY,
     community_name VARCHAR(255) NOT NULL,
@@ -71,7 +79,6 @@ CREATE TABLE IF NOT EXISTS community_data (
     uploaded_by VARCHAR(100)
 );
 
--- Infrastructure data
 CREATE TABLE IF NOT EXISTS infrastructure_data (
     id BIGSERIAL PRIMARY KEY,
     infrastructure_type VARCHAR(100) NOT NULL,
@@ -85,7 +92,6 @@ CREATE TABLE IF NOT EXISTS infrastructure_data (
     uploaded_by VARCHAR(100)
 );
 
--- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_energy_location ON energy_data(latitude, longitude);
 CREATE INDEX IF NOT EXISTS idx_energy_type ON energy_data(energy_type);
 CREATE INDEX IF NOT EXISTS idx_community_location ON community_data(latitude, longitude);
@@ -94,19 +100,36 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_sso ON users(sso_provider, sso_user_id);
 
--- Create initial admin user (password: admin123 - should be changed in production)
-INSERT INTO users (username, email, password, mbti_type, created_at)
-VALUES ('admin', 'admin@energyequitygrid.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ENTJ', CURRENT_TIMESTAMP)
-ON CONFLICT (username) DO NOTHING;
+-- NIST AU-2/AU-3: Audit log for security-relevant events
+CREATE TABLE IF NOT EXISTS audit_log (
+    id BIGSERIAL PRIMARY KEY,
+    event_type VARCHAR(50) NOT NULL,
+    username VARCHAR(100),
+    ip_address VARCHAR(100),
+    user_agent TEXT,
+    details TEXT,
+    success BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-INSERT INTO user_roles (user_id, role)
-SELECT id, 'ADMIN' FROM users WHERE username = 'admin'
-ON CONFLICT DO NOTHING;
+CREATE INDEX IF NOT EXISTS idx_audit_log_event_type ON audit_log(event_type);
+CREATE INDEX IF NOT EXISTS idx_audit_log_username ON audit_log(username);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at);
 
-INSERT INTO user_roles (user_id, role)
-SELECT id, 'MODERATOR' FROM users WHERE username = 'admin'
-ON CONFLICT DO NOTHING;
+-- GDPR Article 30: Consent log
+CREATE TABLE IF NOT EXISTS consent_log (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    consent_type VARCHAR(50) NOT NULL,
+    granted BOOLEAN NOT NULL,
+    ip_address VARCHAR(100),
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
-INSERT INTO user_roles (user_id, role)
-SELECT id, 'USER' FROM users WHERE username = 'admin'
-ON CONFLICT DO NOTHING;
+CREATE INDEX IF NOT EXISTS idx_consent_log_user_id ON consent_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_consent_log_type ON consent_log(consent_type);
+
+-- Configure initial admin access outside this schema in a deployment-specific seed step.
+-- Avoid shipping a shared default admin password in source control.

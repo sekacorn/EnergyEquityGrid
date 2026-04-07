@@ -28,7 +28,7 @@ public class UserSession {
     private String userAgent;
 
     @Column(columnDefinition = "TEXT")
-    private String preferences; // JSON preferences including MBTI settings
+    private String preferences; // JSON preferences for saved session options
 
     @PrePersist
     protected void onCreate() {

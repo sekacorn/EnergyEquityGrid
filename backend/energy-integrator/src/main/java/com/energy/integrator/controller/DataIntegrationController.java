@@ -4,15 +4,18 @@ import com.energy.integrator.service.DataIntegrationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Map;
 
+@Validated
 @RestController
 @RequestMapping("/api/data")
-@CrossOrigin(origins = "*")
 public class DataIntegrationController {
 
     @Autowired
@@ -62,9 +65,9 @@ public class DataIntegrationController {
 
     @GetMapping("/integrated")
     public ResponseEntity<Map<String, Object>> getIntegratedData(
-            @RequestParam Double latitude,
-            @RequestParam Double longitude,
-            @RequestParam(defaultValue = "50") Double radius) {
+            @RequestParam @Min(-90) @Max(90) Double latitude,
+            @RequestParam @Min(-180) @Max(180) Double longitude,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(500) Double radius) {
         Map<String, Object> data = dataIntegrationService.getIntegratedData(latitude, longitude, radius);
         return ResponseEntity.ok(data);
     }

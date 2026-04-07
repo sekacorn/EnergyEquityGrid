@@ -1,42 +1,51 @@
 import { useState } from 'react'
-import axios from 'axios'
+import { API_BASE_AI } from '../config'
+import { apiRequest, getErrorMessage } from '../utils/apiClient'
+import { renderSafeRichText } from '../utils/html'
 
-function LLMChat({ mbtiType }) {
+function LLMChat() {
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
+  const [statusMessage, setStatusMessage] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!query.trim()) return
+    if (!query.trim()) {
+      return
+    }
 
     const userMessage = { role: 'user', content: query }
-    setMessages([...messages, userMessage])
+    setMessages((current) => [...current, userMessage])
     setLoading(true)
+    setStatusMessage('Sending your question to the assistant.')
 
     try {
-      const response = await axios.post('http://localhost:8084/query', {
-        query: query,
-        mbti_type: mbtiType,
-        context: {}
+      const response = await apiRequest(`${API_BASE_AI}/api/ai/query`, {
+        method: 'POST',
+        body: {
+          query,
+          context: {}
+        }
       })
 
       const assistantMessage = {
         role: 'assistant',
-        content: response.data.response,
-        suggestions: response.data.suggestions
+        content: response.response,
+        suggestions: response.suggestions
       }
 
-      setMessages([...messages, userMessage, assistantMessage])
+      setMessages((current) => [...current, assistantMessage])
       setQuery('')
+      setStatusMessage('Assistant response received.')
     } catch (error) {
-      console.error('LLM query error:', error)
       const errorMessage = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: getErrorMessage(error, 'Sorry, I ran into an error while processing your request.'),
         suggestions: []
       }
-      setMessages([...messages, userMessage, errorMessage])
+      setMessages((current) => [...current, errorMessage])
+      setStatusMessage('Assistant response failed. An error message has been added to the chat.')
     } finally {
       setLoading(false)
     }
@@ -48,10 +57,16 @@ function LLMChat({ mbtiType }) {
 
   return (
     <div className="flex flex-col h-[500px]">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 rounded-t-lg">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 rounded-t-lg"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        aria-busy={loading}
+      >
         {messages.length === 0 && (
-          <div className="text-center text-gray-500 mt-8">
-            <p className="text-lg font-semibold mb-2">Ask me anything about energy solutions!</p>
+          <div className="text-center text-slate-500 mt-8">
+            <p className="text-lg font-semibold mb-2">Ask me anything about energy solutions.</p>
             <p className="text-sm">Examples:</p>
             <ul className="text-sm mt-2 space-y-1">
               <li>"How can I power my home with solar?"</li>
@@ -66,22 +81,23 @@ function LLMChat({ mbtiType }) {
             <div
               className={`max-w-2xl p-4 rounded-lg ${
                 msg.role === 'user'
-                  ? `mbti-${mbtiType.toLowerCase()}`
-                  : 'bg-white border border-gray-200'
+                  ? 'bg-emerald-700 text-white'
+                  : 'bg-white border border-slate-200'
               }`}
             >
               <div
-                className={msg.role === 'user' ? 'text-white' : 'text-gray-800'}
-                dangerouslySetInnerHTML={{ __html: msg.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+                className={msg.role === 'user' ? 'text-white' : 'text-slate-800'}
+                dangerouslySetInnerHTML={{ __html: renderSafeRichText(msg.content) }}
               />
               {msg.suggestions && msg.suggestions.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-sm font-semibold text-gray-700">Suggestions:</p>
+                  <p className="text-sm font-semibold text-slate-700">Suggestions:</p>
                   {msg.suggestions.map((suggestion, sIdx) => (
                     <button
                       key={sIdx}
+                      type="button"
                       onClick={() => handleSuggestion(suggestion)}
-                      className="block w-full text-left px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 rounded border border-blue-200"
+                      className="block w-full text-left px-3 py-2 text-sm bg-cyan-50 hover:bg-cyan-100 rounded border border-cyan-200"
                     >
                       {suggestion}
                     </button>
@@ -94,25 +110,31 @@ function LLMChat({ mbtiType }) {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 p-4 rounded-lg">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="bg-white border border-slate-200 p-4 rounded-lg">
+              <div aria-hidden="true" className="flex space-x-2">
+                <div className="w-2 h-2 bg-emerald-700 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-emerald-700 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-emerald-700 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
+              <p className="sr-only">Assistant is typing.</p>
             </div>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 bg-white rounded-b-lg border-t">
+      <form onSubmit={handleSubmit} className="p-4 bg-white rounded-b-lg border-t border-slate-200">
+        <label htmlFor="llm-chat-query" className="sr-only">
+          Ask about energy solutions
+        </label>
         <div className="flex space-x-2">
           <input
+            id="llm-chat-query"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ask about energy solutions..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-describedby="llm-chat-status"
+            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700"
             disabled={loading}
           />
           <button
@@ -120,12 +142,15 @@ function LLMChat({ mbtiType }) {
             disabled={loading || !query.trim()}
             className={`px-6 py-2 rounded-lg font-semibold text-white ${
               loading || !query.trim()
-                ? 'bg-gray-400 cursor-not-allowed'
-                : `mbti-${mbtiType.toLowerCase()} hover:opacity-90`
+                ? 'bg-slate-400 cursor-not-allowed'
+                : 'bg-emerald-700 hover:bg-emerald-800'
             }`}
           >
             Send
           </button>
+        </div>
+        <div id="llm-chat-status" aria-live="polite" className="mt-3 text-sm text-slate-600">
+          {statusMessage}
         </div>
       </form>
     </div>

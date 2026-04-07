@@ -3,6 +3,8 @@ package com.energy.integrator.service;
 import com.energy.integrator.model.*;
 import com.energy.integrator.utils.DataParser;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
@@ -83,18 +85,21 @@ public class DataIntegrationService {
         );
     }
 
+    private static final int MAX_LOCATION_RESULTS = 500;
+
     public Map<String, Object> getIntegratedData(Double lat, Double lon, Double radius) {
         Double latRadius = radius / 111.0; // Approximate degrees
         Double lonRadius = radius / (111.0 * Math.cos(Math.toRadians(lat)));
+        Pageable page = PageRequest.of(0, MAX_LOCATION_RESULTS);
 
         List<EnergyData> energyData = energyDataRepository.findByLocationRange(
-            lat - latRadius, lat + latRadius, lon - lonRadius, lon + lonRadius);
+            lat - latRadius, lat + latRadius, lon - lonRadius, lon + lonRadius, page).getContent();
 
         List<CommunityData> communityData = communityDataRepository.findByLocationRange(
-            lat - latRadius, lat + latRadius, lon - lonRadius, lon + lonRadius);
+            lat - latRadius, lat + latRadius, lon - lonRadius, lon + lonRadius, page).getContent();
 
         List<InfrastructureData> infraData = infrastructureDataRepository.findByLocationRange(
-            lat - latRadius, lat + latRadius, lon - lonRadius, lon + lonRadius);
+            lat - latRadius, lat + latRadius, lon - lonRadius, lon + lonRadius, page).getContent();
 
         return Map.of(
             "energyData", energyData,

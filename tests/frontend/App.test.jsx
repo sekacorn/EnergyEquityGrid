@@ -1,83 +1,62 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
-import Home from '../../frontend/src/pages/Home'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { apiRequest, ApiError, getErrorMessage } from '../../frontend/src/utils/apiClient'
 
-/**
- * Frontend Test Suite
- * Tests React components and user interactions
- */
-
-describe('Home Component', () => {
-  it('renders welcome message', () => {
-    render(
-      <BrowserRouter>
-        <Home mbtiType="ENTJ" />
-      </BrowserRouter>
-    )
-
-    expect(screen.getByText(/Energy/i)).toBeDefined()
+describe('apiClient', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    localStorage.clear()
   })
 
-  it('displays MBTI-specific content for ENTJ', () => {
-    render(
-      <BrowserRouter>
-        <Home mbtiType="ENTJ" />
-      </BrowserRouter>
-    )
+  it('parses successful JSON responses', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ success: true })
+    }))
 
-    const content = screen.getByText(/Strategic/i) || screen.getByText(/strategic/i)
-    expect(content).toBeDefined()
+    await expect(apiRequest('/example')).resolves.toEqual({ success: true })
   })
 
-  it('displays features grid', () => {
-    render(
-      <BrowserRouter>
-        <Home mbtiType="UNKNOWN" />
-      </BrowserRouter>
-    )
+  it('throws structured errors for validation failures', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      statusText: 'Unprocessable Entity',
+      headers: { get: () => 'application/json' },
+      json: async () => ({ detail: 'Latitude must be between -90 and 90' })
+    }))
 
-    expect(screen.getByText(/Data Integration/i)).toBeDefined()
-    expect(screen.getByText(/3D Visualization/i)).toBeDefined()
-    expect(screen.getByText(/AI Predictions/i)).toBeDefined()
-  })
-})
-
-describe('MBTI Personalization', () => {
-  const mbtiTypes = ['ENTJ', 'INFP', 'INFJ', 'ESTP', 'INTJ']
-
-  mbtiTypes.forEach(mbti => {
-    it(`renders correctly for ${mbti}`, () => {
-      render(
-        <BrowserRouter>
-          <Home mbtiType={mbti} />
-        </BrowserRouter>
-      )
-
-      // Should render without errors
-      expect(screen.getByText(/Energy/i)).toBeDefined()
+    await expect(apiRequest('/example')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 422
     })
   })
+
+  it('adds the auth token when present', async () => {
+    localStorage.setItem('token', 'abc123')
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ ok: true })
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+    await apiRequest('/secure', { method: 'POST', body: { hello: 'world' } })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/secure',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer abc123'
+        })
+      })
+    )
+  })
 })
 
-describe('Application Integration', () => {
-  it('handles localStorage for MBTI preference', () => {
-    localStorage.setItem('mbtiType', 'ENTJ')
-    const stored = localStorage.getItem('mbtiType')
-    expect(stored).toBe('ENTJ')
-  })
-
-  it('handles user authentication state', () => {
-    const mockUser = {
-      id: 1,
-      username: 'testuser',
-      roles: ['USER']
-    }
-
-    localStorage.setItem('user', JSON.stringify(mockUser))
-    const stored = JSON.parse(localStorage.getItem('user'))
-
-    expect(stored.username).toBe('testuser')
-    expect(stored.roles).toContain('USER')
+describe('getErrorMessage', () => {
+  it('returns a user-friendly network message', () => {
+    const error = new ApiError('Network request failed', { isNetworkError: true })
+    expect(getErrorMessage(error, 'Fallback')).toMatch(/service is unavailable/i)
   })
 })

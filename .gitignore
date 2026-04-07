@@ -8,11 +8,13 @@ Thumbs.db
 
 # Logs
 *.log
+*.err.log
 logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+frontend-dev.log
 
 # Environment / secrets
 .env
@@ -52,6 +54,7 @@ coverage/
 # Test artifacts
 .tmp/
 tmp/
+screenshot-*.png
 
 # Docker / local runtime
 *.pid

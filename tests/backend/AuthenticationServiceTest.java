@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,6 +30,15 @@ public class AuthenticationServiceTest {
     @MockBean
     private UserRepository userRepository;
 
+    @MockBean
+    private AuditLogRepository auditLogRepository;
+
+    @MockBean
+    private ConsentLogRepository consentLogRepository;
+
+    @MockBean
+    private UserSessionRepository userSessionRepository;
+
     @BeforeEach
     void setUp() {
         // Mock user repository responses
@@ -44,12 +54,29 @@ public class AuthenticationServiceTest {
             "testuser",
             "test@example.com",
             "password123",
-            "ENTJ"
+            true  // GDPR consent
         );
 
         assertTrue((Boolean) result.get("success"));
         assertEquals("User registered successfully", result.get("message"));
         verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void testRegisterUser_NoConsent() {
+        when(userRepository.existsByUsername("testuser")).thenReturn(false);
+        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
+
+        Map<String, Object> result = authenticationService.registerUser(
+            "testuser",
+            "test@example.com",
+            "password123",
+            false  // no GDPR consent
+        );
+
+        assertFalse((Boolean) result.get("success"));
+        assertTrue(result.get("message").toString().contains("Consent"));
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
@@ -59,8 +86,7 @@ public class AuthenticationServiceTest {
         Map<String, Object> result = authenticationService.registerUser(
             "testuser",
             "test@example.com",
-            "password123",
-            "ENTJ"
+            "password123"
         );
 
         assertFalse((Boolean) result.get("success"));
@@ -127,6 +153,54 @@ public class AuthenticationServiceTest {
 
         assertFalse((Boolean) result.get("success"));
         assertEquals("Unauthorized", result.get("message"));
+    }
+
+    @Test
+    void testLogin_AccountLockedOut() {
+        User user = new User("lockeduser", "locked@example.com", "encodedPassword");
+        user.setId(1L);
+        user.setEnabled(true);
+        user.setAccountNonLocked(false);
+        user.setFailedLoginAttempts(5);
+        user.setLockoutUntil(LocalDateTime.now().plusMinutes(30));
+
+        when(userRepository.findByUsername("lockeduser")).thenReturn(Optional.of(user));
+
+        Map<String, Object> result = authenticationService.login("lockeduser", "anyPassword");
+
+        assertFalse((Boolean) result.get("success"));
+        assertTrue(result.get("message").toString().contains("temporarily locked"));
+    }
+
+    @Test
+    void testGdprAccessData() {
+        User user = new User("gdpruser", "gdpr@example.com", "password");
+        user.setId(10L);
+        user.setConsentDataProcessing(true);
+        user.setConsentDataProcessingAt(LocalDateTime.now());
+
+        when(userRepository.findById(10L)).thenReturn(Optional.of(user));
+        when(consentLogRepository.findByUserIdOrderByCreatedAtDesc(10L)).thenReturn(java.util.List.of());
+
+        Map<String, Object> result = authenticationService.getUserData(10L);
+
+        assertTrue((Boolean) result.get("success"));
+        assertNotNull(result.get("data"));
+    }
+
+    @Test
+    void testGdprDeleteRequest() {
+        User user = new User("deleteuser", "delete@example.com", "password");
+        user.setId(11L);
+
+        when(userRepository.findById(11L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        Map<String, Object> result = authenticationService.requestDataDeletion(11L);
+
+        assertTrue((Boolean) result.get("success"));
+        assertTrue(result.get("message").toString().contains("deletion request"));
+        verify(userSessionRepository, times(1)).deleteByUserId(11L);
     }
 
     @Test
