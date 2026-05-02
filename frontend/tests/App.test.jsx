@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { apiRequest, ApiError, getErrorMessage } from '../../frontend/src/utils/apiClient'
+import { apiRequest, ApiError, getErrorMessage } from '../src/utils/apiClient'
 
 describe('apiClient', () => {
   beforeEach(() => {

@@ -1,13 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import DataUpload from '../../frontend/src/components/DataUpload'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
+import DataUpload from '../src/components/DataUpload'
 
-// Mock config and apiClient so tests don't need a running server
-vi.mock('../../frontend/src/config', () => ({
+vi.mock('../src/config', () => ({
   API_BASE_INTEGRATOR: 'http://localhost:8081'
 }))
 
-vi.mock('../../frontend/src/utils/apiClient', () => ({
+vi.mock('../src/utils/apiClient', () => ({
   apiRequest: vi.fn(),
   getErrorMessage: vi.fn((error, fallback) => error?.message || fallback),
   ApiError: class ApiError extends Error {
@@ -20,7 +19,6 @@ vi.mock('../../frontend/src/utils/apiClient', () => ({
   }
 }))
 
-// Silence react-toastify in tests
 vi.mock('react-toastify', () => ({
   toast: {
     error: vi.fn(),
@@ -29,7 +27,7 @@ vi.mock('react-toastify', () => ({
   }
 }))
 
-import { apiRequest } from '../../frontend/src/utils/apiClient'
+import { apiRequest } from '../src/utils/apiClient'
 import { toast } from 'react-toastify'
 
 function makeFile(name, size, type = 'text/csv') {
@@ -40,6 +38,10 @@ function makeFile(name, size, type = 'text/csv') {
 describe('DataUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    cleanup()
   })
 
   it('renders the upload form', () => {
@@ -93,7 +95,7 @@ describe('DataUpload', () => {
   })
 
   it('shows a service error message when the upload request fails', async () => {
-    const { ApiError } = await import('../../frontend/src/utils/apiClient')
+    const { ApiError } = await import('../src/utils/apiClient')
     apiRequest.mockRejectedValue(new ApiError('Server error', { status: 500 }))
 
     render(<DataUpload />)

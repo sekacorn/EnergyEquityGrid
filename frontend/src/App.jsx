@@ -9,6 +9,7 @@ import Collaborate from './pages/Collaborate'
 import Troubleshoot from './pages/Troubleshoot'
 import Login from './pages/Login'
 import Privacy from './pages/Privacy'
+import Compliance from './pages/Compliance'
 import ErrorBoundary from './components/ErrorBoundary'
 import CookieConsent from './components/CookieConsent'
 
@@ -75,6 +76,7 @@ function App() {
                   <NavLink to="/explore" className={navLinkClassName}>Explore 3D</NavLink>
                   <NavLink to="/collaborate" className={navLinkClassName}>Collaborate</NavLink>
                   <NavLink to="/troubleshoot" className={navLinkClassName}>Troubleshoot</NavLink>
+                  <NavLink to="/compliance" className={navLinkClassName}>Compliance</NavLink>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
@@ -117,6 +119,7 @@ function App() {
                 <NavLink to="/explore" className={mobileNavLinkClassName} onClick={() => setMobileNavOpen(false)}>Explore 3D</NavLink>
                 <NavLink to="/collaborate" className={mobileNavLinkClassName} onClick={() => setMobileNavOpen(false)}>Collaborate</NavLink>
                 <NavLink to="/troubleshoot" className={mobileNavLinkClassName} onClick={() => setMobileNavOpen(false)}>Troubleshoot</NavLink>
+                <NavLink to="/compliance" className={mobileNavLinkClassName} onClick={() => setMobileNavOpen(false)}>Compliance</NavLink>
               </div>
             )}
           </div>
@@ -132,6 +135,7 @@ function App() {
               <Route path="/troubleshoot" element={<Troubleshoot />} />
               <Route path="/login" element={<Login onLogin={handleLogin} />} />
               <Route path="/privacy" element={<Privacy user={user} />} />
+              <Route path="/compliance" element={<Compliance />} />
             </Routes>
           </ErrorBoundary>
         </main>
@@ -151,6 +155,10 @@ function App() {
               <p className="text-xs mt-2">
                 <Link to="/privacy" className="text-slate-300 hover:text-white underline">
                   Privacy Policy &amp; Data Rights (GDPR)
+                </Link>
+                <span className="mx-2 text-slate-500">|</span>
+                <Link to="/compliance" className="text-slate-300 hover:text-white underline">
+                  Compliance
                 </Link>
               </p>
             </div>

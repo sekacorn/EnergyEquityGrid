@@ -1,187 +1,151 @@
 # EnergyEquityGrid
 
-**Democratizing Access to Clean and Affordable Energy**
-
-EnergyEquityGrid is a full-stack web application for exploring energy access challenges with renewable energy data, community information, infrastructure context, AI-assisted recommendations, and interactive 3D visualization.
+**Mission:** EnergyEquityGrid is free, inspectable software for energy-equity research and planning. It helps nonprofits, universities, researchers, students, and public-interest teams reduce software costs by giving them a self-hosted tool for uploading local energy data, exploring infrastructure context, generating planning estimates, and coordinating community energy work.
 
 ![Home page with feature overview, AI assistant, and cookie consent banner](screenshot-01.png)
-
 ![Analyze page with data upload and AI energy predictions](screenshot-02.png)
-
 ![3D energy grid visualization with solar, wind, and hydro markers](screenshot-03.png)
-
 ![Collaboration room with shared planning feed and session controls](screenshot-04.png)
 
-## Purpose and Impact
+## The Problem
 
-- Addresses energy poverty with practical planning tools.
-- Supports community, NGO, and policymaker workflows.
-- Uses open-source components that can be adapted for local deployment.
-- Combines data ingestion, visualization, prediction, and troubleshooting in one platform.
+Energy access, clean-energy planning, and infrastructure research often require software that is expensive, closed, or difficult to adapt. Public-interest groups may need to compare renewable options, prepare community datasets, review infrastructure gaps, and document planning decisions, but commercial tools can put those workflows behind licensing fees, usage limits, vendor lock-in, or opaque hosted systems.
 
-## Key Features
+This is especially hard for:
 
-### 1. Data Integration
+- Nonprofits working with limited technology budgets.
+- University labs and student teams that need reproducible tools for coursework or research.
+- Researchers who need to inspect assumptions, data flows, and model behavior.
+- Community and public-interest teams that need practical planning software without giving up control of their data.
 
-- Aggregates renewable energy data from sources such as IRENA and NREL.
-- Imports community data from OpenStreetMap and related datasets.
-- Supports CSV, JSON, and GeoJSON uploads with file validation (type, size, extension).
+EnergyEquityGrid addresses cost, access, workflow, privacy, and infrastructure concerns by providing a full-stack application that can be cloned, run locally, inspected, modified, and deployed by the organizations using it.
 
-### 2. 3D Visualization
+## What This Solves
 
-- Interactive 3D energy grid maps using Three.js (`@react-three/fiber`).
-- Viewer supports rotate, pan, and zoom controls.
-- Responsive layout for desktop and smaller screens.
-- Accessible data table alternative below the 3D viewer for screen readers (WCAG 2.1 AA).
+EnergyEquityGrid gives users a working starting point for community energy analysis instead of a paid black-box platform.
 
-### 3. AI-Driven Energy Solutions
+It helps teams:
 
-- PyTorch-based energy demand predictions.
-- Practical recommendations for solar, wind, hybrid, grid expansion, and microgrids.
-- Coordinate validation and NaN/Inf output guards for safer request handling.
-- AI requests are routed through the backend gateway (energy-integrator), not directly to AI services.
+- Upload energy, community, and infrastructure datasets in CSV, JSON, or GeoJSON formats.
+- Store and query uploaded datasets in PostgreSQL through Spring Boot services.
+- Review nearby energy, community, and infrastructure records by location and radius.
+- Generate planning estimates for energy demand and possible renewable solutions.
+- Explore sample renewable-energy points in an interactive 3D viewer.
+- Ask plain-language questions about solar, wind, microgrids, grid expansion, and troubleshooting.
+- Coordinate shared planning notes in WebSocket collaboration rooms.
+- Run the stack locally with Docker Compose instead of depending on a proprietary hosted service.
+- Inspect the code, tests, migrations, API behavior, and deployment configuration.
 
-### 4. Natural Language Guidance
+The project is not a substitute for engineering review, utility interconnection studies, legal compliance review, or final capital planning. It is a practical research and planning tool that lowers the cost of early analysis and makes the software assumptions visible.
 
-- Ask questions in plain English.
-- Get explanations about solar, wind, microgrids, grid access, and planning tradeoffs.
-- Troubleshoot common workflow issues through the LLM service.
-- Responses are sanitized with `sanitize-html` before rendering.
+## Who It Is For
 
-### 5. Collaboration
+- **Nonprofits** that need low-cost tools for energy access, resilience, climate, housing, public health, or community infrastructure work.
+- **Universities** that need a teachable, modifiable full-stack platform for clean-energy, data, policy, or civic technology courses.
+- **Researchers** who need source-accessible software for experiments, prototypes, reproducible analysis, or grant-funded public-interest work.
+- **Students** learning energy systems, data visualization, AI-assisted analysis, privacy-aware application design, or full-stack engineering.
+- **Public-interest teams** working on community energy planning, infrastructure mapping, environmental justice, disaster resilience, or public service delivery.
+- **Local governments, civic technologists, and community planners** who need a starting point they can adapt for local data and local constraints.
 
-- WebSocket-based collaboration rooms for shared planning updates.
-- Users can join a named session, view active participants, and post live annotations.
-- Exponential backoff reconnection (up to 8 attempts).
-- Configure the frontend collaboration URL with `VITE_WS_COLLAB`.
+## Free / Low-Cost Use
 
-### 6. Enterprise Authentication
+This repository is licensed under the [Apache License 2.0](LICENSE).
 
-- User, moderator, and admin roles with JWT (HS512) tokens.
-- MFA support with Google Authenticator (TOTP).
-- SSO-ready configuration for Google, Azure, and Okta.
-- Account lockout after 5 failed login attempts (30-minute lockout, NIST AC-7).
-- Security audit logging for all authentication events.
+Based on the license included in this repo, users may use, reproduce, modify, prepare derivative works, publicly display, publicly perform, sublicense, and distribute the software in source or object form under the Apache 2.0 terms. The license also includes a patent grant from contributors. If you redistribute the work or modified versions, you must comply with the license conditions, including providing a copy of the license, marking modified files, and retaining required copyright, patent, trademark, and attribution notices.
 
-### 7. Privacy & GDPR Compliance
+The license does not provide warranties, and the software is provided "AS IS."
 
-- Full privacy policy page documenting data collection, legal bases, and retention periods.
-- User data rights: access (Art. 15), export as JSON (Art. 20), and erasure request (Art. 17).
-- Granular consent management for data processing, marketing, and analytics (Art. 7).
-- Consent history logging for Art. 30 record-keeping.
-- Cookie/localStorage consent banner with Essential Only / Accept All options.
-- Automated data retention scheduler: 90-day session purge, 30-day deletion grace period execution.
-- Registration requires explicit data processing consent.
+For eligible nonprofits, universities, researchers, students, and public-interest groups, practical low-cost use can look like this:
 
-### 8. Accessibility (Section 508 / WCAG 2.1 AA)
+```bash
+git clone https://github.com/sekacorn/EnergyEquityGrid.git
+cd EnergyEquityGrid
+cp .env.example .env
+docker-compose up --build
+```
 
-- Skip-to-content link and landmark roles on navigation and main content.
-- All form inputs have associated `<label>` elements with `htmlFor`/`id`.
-- `aria-live` regions on all dynamic content (chat, collaboration feed, status messages, predictions).
-- `role="alert"` on error messages and `role="log"` on chat/collaboration feeds.
-- `prefers-reduced-motion` media query disables animations.
-- `focus-visible` outlines (3px emerald) for keyboard navigation.
-- Accessible data table as a text equivalent for the 3D viewer canvas.
-- Screen-reader-only labels on loading spinners and decorative elements.
+You can also fork the repository, change the code for your local workflow, and deploy your own copy, subject to the Apache 2.0 license terms.
 
-### 9. Security Hardening (NIST SP 800-53)
+No project contact email is listed in the repository files.
 
-- **AC-7**: Account lockout after 5 failed login attempts.
-- **AC-12**: 4-hour JWT access tokens, 24-hour refresh tokens (configurable).
-- **AU-2/AU-3**: Database audit log for all security events + Logback file appenders with rolling retention.
-- **SC-7**: CSP with `object-src 'none'`, `frame-ancestors 'self'`, `Permissions-Policy`, `COOP`, `CORP` headers.
-- **SC-13**: HTTPS/TLS ready (TLS 1.2+1.3, ECDHE ciphers, HSTS preload) — activate by mounting certs.
-- **SC-28**: PostgreSQL `pgcrypto` extension enabled, data checksums on init, encrypted volume documentation.
-- **IA-5**: JWT secret must be at least 64 characters (`openssl rand -base64 64`).
+## What Is Included
 
-## Tech Stack
+Current repository contents include:
 
-| Layer          | Technology                                                |
-| -------------- | --------------------------------------------------------- |
-| Frontend       | React 18, React Router 6, Three.js, Tailwind CSS, Vite   |
-| Backend        | Java 17, Spring Boot 3.2, Spring Security, Flyway         |
-| AI Service     | Python 3.10, FastAPI, PyTorch, Pydantic                   |
-| LLM Service    | Python 3.10, FastAPI, Pydantic                            |
-| Database       | PostgreSQL 15, Redis 7                                    |
-| Auth           | JWT (HS512), OAuth2, Google Authenticator (TOTP)          |
-| Infrastructure | Docker, Docker Compose, NGINX                             |
-| Monitoring     | Spring Actuator, Prometheus metrics endpoint              |
+- **React frontend:** Vite, React Router, Tailwind CSS, reusable components, and pages for Home, Analyze, Explore 3D, Collaborate, Troubleshoot, Login, and Privacy.
+- **Data upload workflow:** Frontend validation for CSV, JSON, and GeoJSON files up to 100 MB, with upload types for energy, community, and infrastructure data.
+- **Data integration API:** A Spring Boot service that parses uploaded files, stores records with JPA repositories, and exposes an integrated location/radius query.
+- **AI gateway:** Backend-owned `/api/ai/*` routes that forward prediction, query, and troubleshooting requests to internal Python services.
+- **Energy prediction service:** A FastAPI and PyTorch service that accepts location, population, grid access, current demand, and energy preference inputs, then returns predicted demand, confidence, solution types, estimated capacity, rough cost ranges, and implementation time ranges.
+- **Planning guidance service:** A FastAPI service with built-in guidance for solar, wind, microgrids, grid expansion, and common workflow troubleshooting. This is deterministic guidance logic, not an external hosted LLM integration.
+- **3D visualization:** A Three.js/@react-three/fiber viewer with sample solar and wind points, orbit controls, markers scaled by potential, and a text table alternative.
+- **Collaboration rooms:** WebSocket-based shared sessions with participants, live planning notes, annotations, reconnect behavior, and in-memory room state.
+- **Authentication service:** Spring Boot user/session service with registration, login, JWT access and refresh tokens, role support, SSO-oriented endpoints, MFA setup/verification, account lockout, and audit logging.
+- **Privacy and GDPR-oriented workflows:** Consent logging, privacy page, data access, JSON export, deletion request, optional consent updates, and a scheduled retention cleanup.
+- **Database and migrations:** PostgreSQL schema managed by Flyway migrations, Redis configuration, and legacy reference schema under `database/postgres/schema.sql`.
+- **Deployment files:** Dockerfiles for frontend, backend, predictor, and guidance services; Docker Compose orchestration; and an NGINX reverse proxy with API routing, rate limits, security headers, gzip, WebSocket proxying, and documented HTTPS configuration.
+- **Compliance checklist:** A practical deployment checklist for GDPR, European Accessibility Act / EN 301 549, EU AI Act, NIS2, Cyber Resilience Act, and security review is available in [docs/compliance-checklist.md](docs/compliance-checklist.md).
+- **Tests:** Python tests for AI services, Java tests for backend service behavior, frontend Vitest tests, and end-to-end style module tests.
+- **Screenshots:** Five PNG screenshots showing the current UI and workflows.
+
+## Current Status
+
+EnergyEquityGrid is best treated as a **prototype and research starter kit**, not a turnkey production system.
+
+What is working now:
+
+- The repository contains a complete multi-service application structure.
+- Docker Compose can build and run the intended service stack.
+- Data upload, parsing, integrated data lookup, AI gateway, prediction, guidance, collaboration, auth, privacy, and deployment scaffolding are implemented in source.
+- Tests exist for important backend, frontend, AI, and service-level behavior.
+
+Important limitations:
+
+- The predictor uses `model.pt` if present, but falls back to a randomly initialized PyTorch model when no trained model file exists. Outputs should be treated as demonstration or planning estimates unless a validated model is supplied.
+- The natural-language service is a rules/knowledge-based FastAPI service. It does not currently call an external LLM provider.
+- The 3D viewer ships with sample data by default; connecting uploaded/query data into the viewer is a likely next integration step.
+- SSO configuration is present, but production identity-provider setup still needs deployment-specific configuration and validation.
+- Security, privacy, and compliance features are included as implementation scaffolding, but any real deployment should receive a security, legal, and infrastructure review.
 
 ## Quick Start
 
 ### Prerequisites
 
 - Docker and Docker Compose
+- Git
+
+For local service-by-service development, also install:
+
 - Node.js 18+
 - Java 17+
 - Python 3.10+
-- Git
 
-### Installation
-
-1. Clone the repository.
+### Run the Full Stack
 
 ```bash
 git clone https://github.com/sekacorn/EnergyEquityGrid.git
 cd EnergyEquityGrid
-```
-
-2. Copy `.env.example` to `.env` and update secrets and local URLs as needed.
-
-```bash
 cp .env.example .env
-# Edit .env — at minimum, change POSTGRES_PASSWORD and JWT_SECRET
 ```
 
-3. Start the services.
+Edit `.env` before non-demo use. At minimum, replace `POSTGRES_PASSWORD` and `JWT_SECRET` with deployment-specific values.
 
 ```bash
 docker-compose up --build
 ```
 
-### Access the Application
+### Service URLs
 
-| Service                | URL                         |
-| ---------------------- | --------------------------- |
-| Frontend               | http://localhost:3000        |
-| NGINX Gateway          | http://localhost:8080        |
-| Energy Integrator API  | http://localhost:8081        |
-| User Session API       | http://localhost:8082        |
-| AI Prediction Service  | http://localhost:8083        |
-| LLM Service            | http://localhost:8084        |
-
-### Frontend Routes
-
-| Route            | Description                                  |
-| ---------------- | -------------------------------------------- |
-| `/`              | Home page with feature overview and AI chat  |
-| `/analyze`       | Data upload and AI energy predictions        |
-| `/explore`       | 3D energy grid visualization                 |
-| `/collaborate`   | WebSocket collaboration rooms                |
-| `/troubleshoot`  | AI-assisted troubleshooting                  |
-| `/login`         | Authentication                               |
-| `/privacy`       | Privacy policy, consent management, and data rights (GDPR) |
+| Service | URL |
+| --- | --- |
+| Frontend | http://localhost:3000 |
+| NGINX gateway | http://localhost:8080 |
+| Energy integrator API | http://localhost:8081 |
+| User session API | http://localhost:8082 |
+| AI prediction service | http://localhost:8083 |
+| Planning guidance service | http://localhost:8084 |
 
 ## Local Development
-
-### Backend Services
-
-```bash
-cd backend/energy-integrator
-mvn spring-boot:run
-
-cd ../user-session
-mvn spring-boot:run
-```
-
-### AI Services
-
-```bash
-cd ai-model
-pip install -r requirements.txt
-python -m uvicorn energy_predictor:app --host 0.0.0.0 --port 8083
-python -m uvicorn llm_service:app --host 0.0.0.0 --port 8084
-```
 
 ### Frontend
 
@@ -191,85 +155,52 @@ npm install
 npm run dev
 ```
 
-## Configuration
-
-### Root Environment Variables
-
-Use the values in `.env.example` as the starting point. Key variables:
-
-| Variable                  | Purpose                                         |
-| ------------------------- | ----------------------------------------------- |
-| `POSTGRES_DB`             | Database name                                   |
-| `POSTGRES_USER`           | Database username                                |
-| `POSTGRES_PASSWORD`       | Database password                                |
-| `JWT_SECRET`              | Shared JWT signing secret (min 64 chars)         |
-| `JWT_EXPIRATION`          | Access token lifetime in ms (default: 14400000 / 4h) |
-| `JWT_REFRESH_EXPIRATION`  | Refresh token lifetime in ms (default: 86400000 / 24h) |
-| `ALLOWED_ORIGINS`         | CORS allowed origins                             |
-| `VITE_API_AI`             | Frontend AI API base URL                         |
-| `VITE_API_INTEGRATOR`     | Frontend integrator API base URL                 |
-| `VITE_API_SESSION`        | Frontend session API base URL                    |
-| `VITE_WS_COLLAB`          | WebSocket collaboration URL                      |
-| `AI_PREDICTOR_URL`        | Backend downstream AI prediction URL             |
-| `AI_LLM_URL`              | Backend downstream LLM URL                       |
-
-### AI Routing
-
-- The frontend calls backend-owned AI routes at `/api/ai/*`.
-- The energy-integrator service proxies those requests to downstream AI services using `AI_PREDICTOR_URL` and `AI_LLM_URL`.
-- This keeps browser traffic pointed at one backend service instead of directly at the raw AI services.
-- AI gateway endpoints require JWT authentication.
-
-### Database Migrations
-
-- The shared PostgreSQL schema is managed by Flyway migration scripts in both Spring services.
-- Migrations are located at `backend/*/src/main/resources/db/migration/`.
-- `database/postgres/schema.sql` is kept as a legacy reference only and is not used by Docker Compose.
-- Spring services validate their entities against the migrated schema at startup (`ddl-auto: validate`).
-
-Current migrations:
-
-| Version | Description                                   |
-| ------- | --------------------------------------------- |
-| V1      | Initial schema (users, sessions, energy/community/infrastructure data) |
-| V2      | Indexes, widened columns, unique partial indexes |
-| V3      | Account lockout columns, audit log table, pgcrypto extension |
-| V4      | GDPR consent columns, consent log table, retention indexes |
-
-### Security Notes
-
-- Do not ship shared default admin credentials in source control.
-- Configure admin access through a deployment-specific bootstrap or seed process.
-- Keep secrets server-side and avoid exposing them in browser code.
-- Restrict `ALLOWED_ORIGINS` for non-local environments.
-- Generate a strong JWT secret: `openssl rand -base64 64`.
-- Enable HTTPS in production by mounting TLS certs and uncommenting the HTTPS server block in `infra/nginx/default.conf`.
-
-### Enabling HTTPS
-
-1. Generate or obtain TLS certificates:
-   ```bash
-   # Self-signed (dev/staging):
-   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-     -keyout privkey.pem -out fullchain.pem -subj "/CN=localhost"
-   ```
-2. Mount certs into the NGINX container at `/etc/nginx/ssl/`.
-3. Uncomment the HTTPS server block in `infra/nginx/default.conf`.
-4. The HTTP server block will redirect all traffic to HTTPS.
-
-## Testing
-
-### Backend Tests
+### Backend Services
 
 ```bash
 cd backend/energy-integrator
-mvn test
-
-cd ../user-session
-mvn test
+mvn spring-boot:run
 ```
 
-### AI Service Tests
+```bash
+cd backend/user-session
+mvn spring-boot:run
+```
+
+### Python Services
+
+```bash
+cd ai-model
+pip install -r requirements.txt
+python -m uvicorn energy_predictor:app --host 0.0.0.0 --port 8083
+python -m uvicorn llm_service:app --host 0.0.0.0 --port 8084
+```
+
+## Configuration
+
+Start from `.env.example`. Key settings include:
+
+| Variable | Purpose |
+| --- | --- |
+| `POSTGRES_DB` | PostgreSQL database name |
+| `POSTGRES_USER` | PostgreSQL username |
+| `POSTGRES_PASSWORD` | PostgreSQL password |
+| `JWT_SECRET` | Shared JWT signing secret; use a long random value |
+| `JWT_EXPIRATION` | Access token lifetime |
+| `JWT_REFRESH_EXPIRATION` | Refresh token lifetime |
+| `ALLOWED_ORIGINS` | CORS allowed origins |
+| `VITE_API_AI` | Frontend AI gateway base URL |
+| `VITE_API_AUTH` | Frontend auth API base URL |
+| `VITE_API_INTEGRATOR` | Frontend data API base URL |
+| `VITE_API_SESSION` | Frontend session service base URL |
+| `VITE_WS_COLLAB` | Collaboration WebSocket URL |
+| `AI_PREDICTOR_URL` | Backend URL for the prediction service |
+| `AI_LLM_URL` | Backend URL for the planning guidance service |
+| `GOOGLE_CLIENT_ID`, `AZURE_CLIENT_ID`, `OKTA_CLIENT_ID` | Optional SSO provider configuration |
+
+## Testing
+
+### AI Services
 
 ```bash
 pytest tests/ai/test_energy_predictor.py -v
@@ -277,129 +208,49 @@ pytest tests/ai/test_llm_service.py -v
 pytest tests/ai/test_cors.py -v
 ```
 
-### Frontend Tests
+### Backend
+
+```bash
+cd backend/energy-integrator
+mvn test
+```
+
+```bash
+cd backend/user-session
+mvn test
+```
+
+### Frontend
 
 ```bash
 cd frontend
-npx vitest tests/frontend/App.test.jsx
-npx vitest tests/frontend/DataUpload.test.jsx
+npm test
 ```
 
-### End-to-End Tests
+### End-to-End Style Checks
 
 ```bash
 pytest tests/e2e/test_services.py -v
 ```
 
-## Example API Calls
-
-### AI Predictor (via backend gateway)
-
-```bash
-curl -X POST http://localhost:8081/api/ai/predict \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-jwt-token>" \
-  -d '{"latitude": 40.7128, "longitude": -74.0060, "population": 5000, "energy_type_preference": "solar", "has_grid_access": true}'
-```
-
-### LLM Query (via backend gateway)
-
-```bash
-curl -X POST http://localhost:8081/api/ai/query \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-jwt-token>" \
-  -d '{"query": "How can I use solar energy?", "context": {}}'
-```
-
-### User Registration (with GDPR consent)
-
-```bash
-curl -X POST http://localhost:8082/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "email": "test@example.com", "password": "password123", "consentDataProcessing": "true"}'
-```
-
-### GDPR Data Access
-
-```bash
-curl http://localhost:8082/api/auth/gdpr/access/{userId}
-```
-
-### GDPR Data Export
-
-```bash
-curl http://localhost:8082/api/auth/gdpr/export/{userId}
-```
-
-### GDPR Deletion Request
-
-```bash
-curl -X POST http://localhost:8082/api/auth/gdpr/delete/{userId}
-```
-
-### Update Consent
-
-```bash
-curl -X POST http://localhost:8082/api/auth/gdpr/consent/{userId} \
-  -H "Content-Type: application/json" \
-  -d '{"consentType": "marketing", "granted": "true"}'
-```
-
 ## Project Structure
 
-```
+```text
 EnergyEquityGrid/
-  ai-model/                    # Python AI services
-    energy_predictor.py        # PyTorch energy demand prediction (port 8083)
-    llm_service.py             # Natural language query service (port 8084)
-    Dockerfile, Dockerfile.llm
-    requirements.txt
+  ai-model/                    Python FastAPI prediction and guidance services
   backend/
-    energy-integrator/         # Spring Boot data + AI gateway service (port 8081)
-      src/main/java/com/energy/integrator/
-        config/                # JwtAuthFilter, WebConfig, WebSocket config
-        controller/            # DataIntegration, AiGateway, Collaboration controllers
-        service/               # DataIntegration, AiGateway, CollaborationRoom services
-        model/                 # JPA entities and repositories
-        utils/                 # DataParser (CSV, JSON, GeoJSON)
-        websocket/             # WebSocket handler
-      src/main/resources/
-        application.yml
-        db/migration/          # Flyway V1–V4
-        logback-spring.xml     # Structured logging (NIST AU-2/AU-3)
-    user-session/              # Spring Boot auth service (port 8082)
-      src/main/java/com/energy/session/
-        config/                # WebConfig
-        controller/            # AuthenticationController (auth + GDPR endpoints)
-        model/                 # User, Role, UserSession, AuditLog, ConsentLog entities
-        service/               # AuthenticationService, DataRetentionScheduler
-      src/main/resources/
-        application.yml
-        db/migration/          # Flyway V1–V4
-        logback-spring.xml
-  database/
-    postgres/schema.sql        # Legacy reference schema
-    redis/config.yaml
-  frontend/
-    src/
-      components/              # DataUpload, EnergyViewer, LLMChat, ErrorBoundary, CookieConsent
-      pages/                   # Home, Analyze, Explore, Collaborate, Troubleshoot, Login, Privacy
-      utils/                   # apiClient.js (shared fetch + JWT), html.js (sanitize-html)
-      config.js                # Environment-based API URL configuration
-      index.css                # Tailwind + accessibility styles
-    index.html
-    package.json
-    vite.config.js
-  infra/nginx/default.conf     # NGINX reverse proxy with security headers
-  docker-compose.yml           # Full-stack orchestration with healthchecks
-  .env.example                 # Documented environment template
-  tests/
-    ai/                        # PyTorch predictor, LLM service, CORS tests
-    backend/                   # AuthenticationService, DataIntegration tests
-    frontend/                  # App, DataUpload component tests
-    e2e/                       # End-to-end service integration tests
+    energy-integrator/         Spring Boot data integration, AI gateway, WebSocket service
+    user-session/              Spring Boot auth, sessions, MFA, SSO, consent, GDPR workflows
+  database/                    PostgreSQL reference schema and Redis config
+  docs/                        Compliance checklist and deployment review notes
+  frontend/                    React/Vite UI
+  infra/nginx/                 Reverse proxy and security-header configuration
+  tests/                       AI, backend, frontend, and service-level tests
+  docker-compose.yml           Local full-stack orchestration
+  .env.example                 Environment template
+  screenshot-*.png             UI screenshots
 ```
 
 ## License
 
-Licensed under [Apache 2.0](LICENSE).
+Licensed under the [Apache License 2.0](LICENSE).
