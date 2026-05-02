@@ -84,7 +84,7 @@ Current repository contents include:
 - **Privacy and GDPR-oriented workflows:** Consent logging, privacy page, data access, JSON export, deletion request, optional consent updates, and a scheduled retention cleanup.
 - **Database and migrations:** PostgreSQL schema managed by Flyway migrations, Redis configuration, and legacy reference schema under `database/postgres/schema.sql`.
 - **Deployment files:** Dockerfiles for frontend, backend, predictor, and guidance services; Docker Compose orchestration; and an NGINX reverse proxy with API routing, rate limits, security headers, gzip, WebSocket proxying, and documented HTTPS configuration.
-- **Compliance checklist:** A practical deployment checklist for GDPR, European Accessibility Act / EN 301 549, EU AI Act, NIS2, Cyber Resilience Act, and security review is available in [docs/compliance-checklist.md](docs/compliance-checklist.md).
+- **Compliance checklist:** A practical deployment checklist for GDPR, European Accessibility Act / EN 301 549, EU AI Act, NIS2, Cyber Resilience Act, Section 508, NIST SP 800-53, NIST Cybersecurity Framework, FedRAMP-readiness planning, and security review is available in [docs/compliance-checklist.md](docs/compliance-checklist.md).
 - **Tests:** Python tests for AI services, Java tests for backend service behavior, frontend Vitest tests, and end-to-end style module tests.
 - **Screenshots:** Five PNG screenshots showing the current UI and workflows.
 

@@ -73,6 +73,63 @@ const europeanStandards = [
   }
 ]
 
+const usPublicSectorStandards = [
+  {
+    name: 'Section 508 / WCAG 2.1 AA',
+    scope: 'Accessible federal/public-sector ICT and web content for users with disabilities.',
+    currentSupport: [
+      'The frontend keeps skip-to-content navigation, semantic landmarks, visible focus states, labeled form controls, and reduced-motion support.',
+      'Status messages, chat, prediction results, upload feedback, and collaboration feeds use ARIA live regions where dynamic updates occur.',
+      'The 3D energy viewer includes a tabular text alternative for the sample visualized data.'
+    ],
+    ownerActions: [
+      'Run a Section 508 and WCAG 2.1 AA audit before public-sector deployment.',
+      'Test keyboard navigation, screen reader behavior, color contrast, reflow, error identification, and non-text alternatives.',
+      'Publish an accessibility statement and remediation plan for any known gaps.'
+    ]
+  },
+  {
+    name: 'NIST SP 800-53 Control Posture',
+    scope: 'Security and privacy control families commonly used by US federal, research, education, and grant-funded systems.',
+    currentSupport: [
+      'Authentication includes account lockout behavior aligned with AC-7-style controls.',
+      'JWT access and refresh token lifetimes support session-management review similar to AC-12 expectations.',
+      'Audit logging for authentication and privacy events supports AU-2/AU-3-style traceability.',
+      'NGINX security headers, TLS configuration notes, rate limiting, and CORS controls support SC-7 and related boundary-protection work.',
+      'PostgreSQL pgcrypto/data-checksum notes and secret-strength guidance support SC-28 and IA-5-oriented hardening.'
+    ],
+    ownerActions: [
+      'Map the deployment to a selected NIST baseline and document inherited, implemented, and not-applicable controls.',
+      'Complete access control, incident response, configuration management, contingency planning, and vulnerability management procedures outside the codebase.',
+      'Review logs, secrets, backup, monitoring, and administrative workflows before production use.'
+    ]
+  },
+  {
+    name: 'NIST Cybersecurity Framework',
+    scope: 'Operational cybersecurity governance across identify, protect, detect, respond, and recover functions.',
+    currentSupport: [
+      'The repository provides a deployable architecture, health checks, security headers, authentication controls, and audit-oriented events.',
+      'Docker Compose, NGINX, PostgreSQL, Redis, backend services, and tests give teams a concrete system to assess and harden.'
+    ],
+    ownerActions: [
+      'Create an asset inventory and define risk ownership for the deployment.',
+      'Add monitoring, alerting, backup restoration drills, incident playbooks, and vulnerability review cadence.',
+      'Document recovery objectives and service continuity expectations for mission-driven users.'
+    ]
+  },
+  {
+    name: 'FedRAMP Readiness',
+    scope: 'Cloud security authorization expectations for US federal cloud services.',
+    currentSupport: [
+      'The repository includes implementation pieces that can support later security documentation, such as auth, audit events, deployment configuration, and test coverage.'
+    ],
+    ownerActions: [
+      'Do not represent this project as FedRAMP authorized or ready without a formal assessment.',
+      'If federal cloud use is planned, prepare a system security plan, control implementation statements, continuous monitoring plan, and third-party assessment path.'
+    ]
+  }
+]
+
 const officialReferences = [
   {
     label: 'European Commission: GDPR data protection rules',
@@ -97,6 +154,22 @@ const officialReferences = [
   {
     label: 'European Commission: Cyber Resilience Act',
     href: 'https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act'
+  },
+  {
+    label: 'Section508.gov: IT Accessibility Laws and Policies',
+    href: 'https://www.section508.gov/manage/laws-and-policies/'
+  },
+  {
+    label: 'NIST SP 800-53 Rev. 5',
+    href: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final'
+  },
+  {
+    label: 'NIST Cybersecurity Framework',
+    href: 'https://www.nist.gov/cyberframework'
+  },
+  {
+    label: 'FedRAMP: Get Authorized',
+    href: 'https://www.fedramp.gov/cloud-service-providers/'
   }
 ]
 
@@ -113,8 +186,9 @@ function Compliance() {
         </p>
         <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           This page is an implementation aid, not legal advice or a certification. Teams
-          deploying EnergyEquityGrid in the EU or EEA should complete their own legal,
-          accessibility, security, and AI-governance review.
+          deploying EnergyEquityGrid in the EU, EEA, US public sector, or grant-funded
+          environments should complete their own legal, accessibility, security, and
+          AI-governance review.
         </div>
       </section>
 
@@ -132,6 +206,47 @@ function Compliance() {
 
         <div className="space-y-5">
           {europeanStandards.map((standard) => (
+            <article key={standard.name} className="rounded-lg border border-slate-200 p-5">
+              <h3 className="text-xl font-semibold text-slate-900">{standard.name}</h3>
+              <p className="mt-2 text-sm text-slate-600">{standard.scope}</p>
+
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div>
+                  <h4 className="font-semibold text-slate-800">Repository Support</h4>
+                  <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-slate-700">
+                    {standard.currentSupport.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800">Deployment Responsibilities</h4>
+                  <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-slate-700">
+                    {standard.ownerActions.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-white rounded-xl shadow p-8" aria-labelledby="us-standards-heading">
+        <div className="mb-6">
+          <h2 id="us-standards-heading" className="text-2xl font-bold">
+            US / Public Sector Standards
+          </h2>
+          <p className="mt-2 text-slate-600">
+            The repository also keeps a US public-sector compliance posture for
+            accessibility, NIST security controls, and federal cloud-readiness planning.
+          </p>
+        </div>
+
+        <div className="space-y-5">
+          {usPublicSectorStandards.map((standard) => (
             <article key={standard.name} className="rounded-lg border border-slate-200 p-5">
               <h3 className="text-xl font-semibold text-slate-900">{standard.name}</h3>
               <p className="mt-2 text-sm text-slate-600">{standard.scope}</p>

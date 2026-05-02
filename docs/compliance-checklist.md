@@ -91,7 +91,32 @@ Use it before public launch, production use, grant-funded deployment, research p
 - [ ] Run dependency audits for frontend, backend, and Python services.
 - [ ] Run container image scans before production deployment.
 
-## 8. Research And Public-Interest Use
+## 8. Section 508 / WCAG 2.1 AA
+
+- [ ] Run Section 508 testing for public-sector or federally funded deployments.
+- [ ] Confirm all primary workflows work with keyboard-only navigation.
+- [ ] Confirm screen reader behavior for navigation, forms, errors, status messages, chat, tables, and collaboration updates.
+- [ ] Confirm color contrast, focus visibility, reflow, zoom, headings, labels, and link purpose.
+- [ ] Confirm 3D, map, chart, image, and canvas content has useful text alternatives.
+- [ ] Publish an accessibility statement and remediation plan for known gaps.
+
+## 9. NIST SP 800-53 / NIST CSF
+
+- [ ] Select the applicable control baseline or framework profile.
+- [ ] Map implemented controls to the selected baseline, including access control, audit, identification/authentication, system communications, configuration, incident response, and contingency planning.
+- [ ] Document which controls are implemented by the application, inherited from hosting infrastructure, handled by organizational process, or not applicable.
+- [ ] Review account lockout, JWT expiration, audit logging, rate limits, TLS, CORS, secrets, and database protection settings.
+- [ ] Define incident response, vulnerability management, backup, recovery, and continuous monitoring procedures.
+- [ ] Keep evidence for tests, reviews, dependency updates, and security configuration decisions.
+
+## 10. FedRAMP Readiness
+
+- [ ] Do not claim FedRAMP authorization unless a formal authorization exists.
+- [ ] If federal cloud deployment is planned, define the cloud boundary, authorization path, impact level, inherited controls, and responsible parties.
+- [ ] Prepare system security plan materials only after the deployment architecture is stable.
+- [ ] Identify continuous monitoring, vulnerability scanning, access review, logging, and incident reporting responsibilities.
+
+## 11. Research And Public-Interest Use
 
 - [ ] Document data sources, licenses, assumptions, and preprocessing steps.
 - [ ] Keep research datasets separate from production personal data.
@@ -99,7 +124,7 @@ Use it before public launch, production use, grant-funded deployment, research p
 - [ ] Add human review for recommendations affecting community infrastructure, funding, safety, or access to services.
 - [ ] Preserve reproducibility notes for model versions, configuration, and source datasets.
 
-## 9. Release Review
+## 12. Release Review
 
 - [ ] Confirm README setup instructions are accurate.
 - [ ] Confirm the Compliance page matches the current code.
@@ -113,7 +138,7 @@ Use it before public launch, production use, grant-funded deployment, research p
 ## Current Repository Notes
 
 - The project includes GDPR-oriented consent, access, export, deletion, and retention workflows.
-- The frontend includes accessibility-oriented UI patterns, but it still needs a formal EN 301 549 / WCAG audit before public deployment.
+- The frontend includes accessibility-oriented UI patterns, but it still needs a formal EN 301 549, Section 508, and WCAG audit before public deployment.
 - The prediction service falls back to a randomly initialized PyTorch model if no trained `model.pt` is present.
 - The guidance service is deterministic and does not call an external hosted LLM in the current code.
 - Docker Compose and NGINX provide a local deployment baseline, but production hardening remains the responsibility of the deploying organization.
